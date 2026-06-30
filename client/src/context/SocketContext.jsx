@@ -28,6 +28,7 @@ export function SocketProvider({ children }) {
 
   return (
     <SocketContext.Provider
+    
       value={{
         socket,
         connected,
