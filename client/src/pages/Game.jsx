@@ -6,19 +6,23 @@ import DicePanel from "../components/game/DicePanel";
 import useGameSocket from "../hooks/useGameSocket";
 
 function Game() {
-  const { game, loading, rollDice } = useGameSocket();
+  const {
+    game,
+    loading,
+    rollDice,
+    moveToken,
+  } = useGameSocket();
+
 
   if (loading || !game) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center">
-
           <div className="w-16 h-16 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
 
           <h1 className="text-3xl font-bold text-white">
             Loading Game...
           </h1>
-
         </div>
       </div>
     );
@@ -42,14 +46,12 @@ function Game() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 
           {game.players.map((player, index) => (
-
             <GamePlayerCard
               key={player.userId}
               player={player}
               host={index === 0}
               active={index === game.currentTurn}
             />
-
           ))}
 
         </div>
@@ -58,7 +60,11 @@ function Game() {
 
         <div className="flex justify-center">
 
-          <GameBoard />
+          <GameBoard
+            game={game}
+            moveToken={moveToken}
+            currentPlayer={game.players[game.currentTurn]}
+          />
 
         </div>
 

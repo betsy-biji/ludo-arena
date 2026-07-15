@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-
 import { useSocket } from "../context/SocketContext";
 import api from "../services/api";
 
@@ -13,10 +12,12 @@ function useGameSocket() {
   const userId = localStorage.getItem("userId");
 
   useEffect(() => {
-    fetchGame();
+    if (roomCode) {
+      fetchGame();
+    }
   }, []);
 
-  const fetchGame = async () => {
+  async function fetchGame() {
     try {
       const res = await api.post("/game/details", {
         roomCode,
@@ -28,7 +29,7 @@ function useGameSocket() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
     if (!roomCode) return;
@@ -37,36 +38,33 @@ function useGameSocket() {
       socket.connect();
     }
 
-    socket.emit("join-room", roomCode);
+    socket.emit("join-room", { roomCode });
 
-    socket.on("game-state", (updatedGame) => {
+    function handleGameState(updatedGame) {
       setGame(updatedGame);
-    });
+    }
 
-    socket.on("game-over", (updatedGame) => {
-      setGame(updatedGame);
-    });
+    socket.on("game-state", handleGameState);
 
     return () => {
-      socket.off("game-state");
-      socket.off("game-over");
+      socket.off("game-state", handleGameState);
     };
-  }, [connected]);
+  }, [socket, connected, roomCode]);
 
-  const rollDice = () => {
+  function rollDice() {
     socket.emit("roll-dice", {
       roomCode,
       userId,
     });
-  };
+  }
 
-  const moveToken = (tokenId) => {
+  function moveToken(tokenNumber) {
     socket.emit("move-token", {
       roomCode,
       userId,
-      tokenId,
+      tokenNumber,
     });
-  };
+  }
 
   return {
     game,

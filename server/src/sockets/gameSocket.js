@@ -1,12 +1,20 @@
 const Room = require("../models/Room");
 const Game = require("../models/Game");
-const { createGame } = require("../services/gameService");
+
+const {
+  createGame,
+  isPlayerTurn,
+  nextTurn,
+  moveToken,
+} = require("../services/gameService");
 
 module.exports = (io) => {
   io.on("connection", (socket) => {
     console.log("🟢 User Connected");
 
-    /* ---------------- JOIN ROOM ---------------- */
+    /* ===========================
+            JOIN ROOM
+    ============================ */
 
     socket.on("join-room", async (data) => {
       try {
@@ -17,23 +25,29 @@ module.exports = (io) => {
 
         socket.join(roomCode);
 
-        console.log(`Player joined room ${roomCode}`);
-
-        const game = await Game.findOne({ roomCode });
+        const game = await Game.findOne({
+          roomCode,
+        });
 
         if (game) {
           socket.emit("game-state", game);
         }
+
+        console.log(`🎮 Joined ${roomCode}`);
       } catch (err) {
-        console.error(err);
+        console.error("Join Room:", err);
       }
     });
 
-    /* ---------------- START GAME ---------------- */
+    /* ===========================
+            START GAME
+    ============================ */
 
     socket.on("start-game", async ({ roomCode }) => {
       try {
-        const room = await Room.findOne({ roomCode });
+        const room = await Room.findOne({
+          roomCode,
+        });
 
         if (!room) return;
 
@@ -45,41 +59,179 @@ module.exports = (io) => {
 
         const game = await createGame(room);
 
-        io.to(roomCode).emit("game-started", game);
-        io.to(roomCode).emit("game-state", game);
+        io.to(roomCode).emit(
+          "game-started",
+          game
+        );
 
-        console.log(`🎮 Game Started : ${roomCode}`);
+        io.to(roomCode).emit(
+          "game-state",
+          game
+        );
+
+        console.log(
+          `🎲 Game Started : ${roomCode}`
+        );
       } catch (err) {
-        console.error(err);
+        console.error("Start Game:", err);
       }
     });
 
+    /* ===========================
+            ROLL DICE
+    ============================ */
     /* ---------------- ROLL DICE ---------------- */
 
-    socket.on("roll-dice", async ({ roomCode }) => {
-      try {
-        const game = await Game.findOne({ roomCode });
+    /* ===========================
+        ROLL DICE
+=========================== */
 
-        if (!game) return;
+socket.on("roll-dice", async ({ roomCode, userId }) => {
+  try {
+    const game = await Game.findOne({ roomCode });
 
-        game.diceValue = Math.floor(Math.random() * 6) + 1;
+    if (!game) return;
 
-        await game.save();
+    if (!isPlayerTurn(game, userId)) {
+      console.log("❌ Not your turn");
+      return;
+    }
 
-        io.to(roomCode).emit("game-state", game);
+    if (game.diceValue !== null) {
+      return;
+    }
 
-        console.log(`🎲 Dice Rolled : ${game.diceValue}`);
-      } catch (err) {
-        console.error(err);
-      }
-    });
+    const dice = Math.floor(Math.random() * 6) + 1;
 
+    game.diceValue = dice;
+
+    const currentPlayer = game.players[game.currentTurn];
+
+    const color = currentPlayer.color.toLowerCase();
+
+    const tokens = game.tokens[color];
+
+    const hasTokenOutside = tokens.some(
+      (t) => !t.isHome && !t.isFinished
+    );
+
+    // No token can move
+if (dice !== 6 && !hasTokenOutside) {
+
+  console.log("⏭ No possible move");
+
+  // Show dice first
+  await game.save();
+
+  io.to(roomCode).emit(
+    "game-state",
+    game
+  );
+
+  // Wait 1 second so players can see the dice
+  setTimeout(async () => {
+
+    const latestGame =
+      await Game.findOne({ roomCode });
+
+    if (!latestGame) return;
+
+    await nextTurn(latestGame);
+
+    io.to(roomCode).emit(
+      "game-state",
+      latestGame
+    );
+
+  }, 1000);
+
+  return;
+}
+    await game.save();
+
+    io.to(roomCode).emit(
+      "game-state",
+      game
+    );
+
+    console.log(
+      `${currentPlayer.username} rolled ${dice}`
+    );
+
+  } catch (err) {
+    console.error(err);
+  }
+});
     /* ---------------- MOVE TOKEN ---------------- */
 
-    socket.on("move-token", async () => {
-      // Step 4.6
-    });
+/* ===========================
+        MOVE TOKEN
+=========================== */
 
+socket.on(
+  "move-token",
+  async ({ roomCode, userId, tokenNumber }) => {
+    try {
+      const game = await Game.findOne({ roomCode });
+
+      if (!game) return;
+
+      if (!isPlayerTurn(game, userId)) {
+        console.log("❌ Not your turn");
+        return;
+      }
+
+      if (game.diceValue === null) {
+        console.log("❌ Roll the dice first");
+        return;
+      }
+
+      const currentPlayer = game.players[game.currentTurn];
+      const color = currentPlayer.color.toLowerCase();
+
+      const result = moveToken(
+        game,
+        color,
+        tokenNumber
+      );
+
+      if (!result.success) {
+        console.log(result.message);
+        return;
+      }
+
+      game.markModified("tokens");
+
+      const rolledSix = game.diceValue === 6;
+
+      await game.save();
+
+      if (!rolledSix) {
+        await nextTurn(game);
+      } else {
+        // Extra turn
+        game.diceValue = null;
+        await game.save();
+      }
+
+      const updatedGame = await Game.findOne({
+        roomCode,
+      });
+
+      io.to(roomCode).emit(
+        "game-state",
+        updatedGame
+      );
+
+      console.log(
+        `${currentPlayer.username} moved token ${tokenNumber}`
+      );
+
+    } catch (err) {
+      console.error("Move Token:", err);
+    }
+  }
+);
     /* ---------------- DISCONNECT ---------------- */
 
     socket.on("disconnect", () => {

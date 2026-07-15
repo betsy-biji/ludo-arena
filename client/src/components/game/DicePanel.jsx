@@ -1,49 +1,46 @@
-import { useState } from "react";
-
-function Dice() {
-
-  const [value,setValue] =
-  useState(1);
-
-  const rollDice = () => {
-
-    const random =
-      Math.floor(
-        Math.random()*6
-      )+1;
-
-    setValue(random);
-  };
-
+function DicePanel({
+  diceValue,
+  onRoll,
+}) {
   return (
-
     <div className="text-center">
 
       <div
         className="
-        h-24
-        w-24
+        h-28
+        w-28
         bg-white
-        text-black
-        rounded-xl
+        rounded-2xl
         flex
         items-center
         justify-center
-        text-4xl
-        font-bold
+        text-5xl
+        font-black
+        text-black
+        shadow-xl
+        border-4
+        border-slate-300
+        transition-all
+        duration-300
         "
       >
-        {value}
+        {diceValue ?? "🎲"}
       </div>
 
       <button
-        onClick={rollDice}
+        onClick={onRoll}
         className="
-        bg-green-500
-        px-6
-        py-2
-        rounded
-        mt-4
+        mt-5
+        bg-cyan-500
+        hover:bg-cyan-600
+        transition
+        px-8
+        py-3
+        rounded-xl
+        text-white
+        font-bold
+        text-lg
+        shadow-lg
         "
       >
         Roll Dice
@@ -53,4 +50,4 @@ function Dice() {
   );
 }
 
-export default Dice;
+export default DicePanel;
