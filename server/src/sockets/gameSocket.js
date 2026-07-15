@@ -76,7 +76,40 @@ module.exports = (io) => {
         console.error("Start Game:", err);
       }
     });
+/* ===========================
+        RESTART GAME
+=========================== */
 
+socket.on("restart-game", async ({ roomCode }) => {
+  try {
+
+    const room = await Room.findOne({ roomCode });
+
+    if (!room) return;
+
+    await Game.deleteOne({
+      roomCode,
+    });
+
+    const game = await createGame(room);
+
+    io.to(roomCode).emit(
+      "game-state",
+      game
+    );
+
+    io.to(roomCode).emit(
+      "restart-success"
+    );
+
+    console.log(
+      `🔄 Game Restarted : ${roomCode}`
+    );
+
+  } catch (err) {
+    console.error(err);
+  }
+});
     /* ===========================
             ROLL DICE
     ============================ */
@@ -202,31 +235,45 @@ socket.on(
 
       game.markModified("tokens");
 
-      const rolledSix = game.diceValue === 6;
+await game.save();
 
-      await game.save();
+if (result.winner) {
 
-      if (!rolledSix) {
-        await nextTurn(game);
-      } else {
-        // Extra turn
-        game.diceValue = null;
-        await game.save();
-      }
+  io.to(roomCode).emit("game-over", {
+    winner: currentPlayer.username,
+    color: currentPlayer.color,
+  });
 
-      const updatedGame = await Game.findOne({
-        roomCode,
-      });
+  io.to(roomCode).emit("game-state", game);
 
-      io.to(roomCode).emit(
-        "game-state",
-        updatedGame
-      );
+  console.log(
+    `🏆 ${currentPlayer.username} won the game`
+  );
 
-      console.log(
-        `${currentPlayer.username} moved token ${tokenNumber}`
-      );
+  return;
+}
 
+const rolledSix = game.diceValue === 6;
+
+if (!rolledSix) {
+  await nextTurn(game);
+} else {
+  game.diceValue = null;
+  await game.save();
+}
+
+const updatedGame = await Game.findOne({
+  roomCode,
+});
+
+io.to(roomCode).emit(
+  "game-state",
+  updatedGame
+);
+
+console.log(
+  `${currentPlayer.username} moved token ${tokenNumber}`
+);
     } catch (err) {
       console.error("Move Token:", err);
     }

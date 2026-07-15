@@ -11,8 +11,9 @@ function Game() {
     loading,
     rollDice,
     moveToken,
+    winner,
+    restartGame,
   } = useGameSocket();
-
 
   if (loading || !game) {
     return (
@@ -31,6 +32,34 @@ function Game() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black">
 
+      {/* Winner Popup */}
+
+      {winner && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+
+          <div className="bg-white rounded-3xl shadow-2xl p-10 w-[420px] text-center">
+
+            <h1 className="text-6xl mb-4">🏆</h1>
+
+            <h2 className="text-3xl font-bold mb-2">
+              {winner.winner} Wins!
+            </h2>
+
+            <p className="text-slate-600 mb-8">
+              Congratulations!
+            </p>
+
+            <button
+            onClick={restartGame}              className="w-full py-3 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition"
+            >
+              Play Again
+            </button>
+
+          </div>
+
+        </div>
+      )}
+
       <GameHeader
         roomCode={game.roomCode}
         currentTurn={
@@ -40,8 +69,6 @@ function Game() {
       />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-
-        {/* Players */}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 
@@ -56,8 +83,6 @@ function Game() {
 
         </div>
 
-        {/* Board */}
-
         <div className="flex justify-center">
 
           <GameBoard
@@ -67,8 +92,6 @@ function Game() {
           />
 
         </div>
-
-        {/* Dice */}
 
         <div className="mt-8 flex justify-center">
 

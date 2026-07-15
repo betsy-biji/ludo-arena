@@ -94,6 +94,52 @@ function sendTokenHome(game, color, tokenNumber) {
   token.isHome = true;
   token.isFinished = false;
 }
+function captureTokens(game, color, position) {
+
+  if (isSafeCell(position)) {
+    return;
+  }
+
+  Object.entries(game.tokens).forEach(([enemyColor, enemyTokens]) => {
+
+    if (enemyColor === color) return;
+
+    enemyTokens.forEach((enemyToken) => {
+
+      if (enemyToken.isHome) return;
+
+      if (enemyToken.isFinished) return;
+
+      if (enemyToken.position !== position) return;
+
+      enemyToken.position = -1;
+      enemyToken.isHome = true;
+      enemyToken.isFinished = false;
+
+    });
+
+  });
+
+}
+function checkWinner(game, color) {
+  const tokens = game.tokens[color];
+
+  const finished = tokens.filter(
+    (token) => token.isFinished
+  ).length;
+
+  if (finished === 4) {
+    game.winner = color;
+    return true;
+  }
+
+  return false;
+}
+const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
+
+function isSafeCell(position) {
+  return SAFE_CELLS.includes(position);
+}
 
 function moveToken(game, color, tokenNumber) {
   const token = getToken(game, color, tokenNumber);
@@ -144,37 +190,25 @@ function moveToken(game, color, tokenNumber) {
 token.position = newPosition;
 
 // ---------- Capture ----------
-Object.entries(game.tokens).forEach(([enemyColor, enemyTokens]) => {
+captureTokens(
+  game,
+  color,
+  token.position
+);
 
-  if (enemyColor === color) return;
-
-  enemyTokens.forEach((enemyToken) => {
-
-    if (enemyToken.isHome) return;
-
-    if (enemyToken.isFinished) return;
-
-    if (enemyToken.position === token.position) {
-
-      enemyToken.position = -1;
-      enemyToken.isHome = true;
-      enemyToken.isFinished = false;
-
-    }
-
-  });
-
-});
-
+// ---------- Finish ----------
 // ---------- Finish ----------
 if (token.position === PATH_LENGTH) {
   token.isFinished = true;
 }
 
+const won = checkWinner(game, color);
+
 return {
   success: true,
   moved: true,
   finished: token.isFinished,
+  winner: won,
 };
 }
 async function nextTurn(game) {
@@ -214,4 +248,6 @@ module.exports = {
   leaveHome,
   moveToken,
   sendTokenHome,
+  captureTokens,
+  checkWinner,
 };

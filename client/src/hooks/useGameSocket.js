@@ -8,13 +8,13 @@ function useGameSocket() {
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const [winner, setWinner] = useState(null);
+
   const roomCode = localStorage.getItem("roomCode");
   const userId = localStorage.getItem("userId");
 
   useEffect(() => {
-    if (roomCode) {
-      fetchGame();
-    }
+    fetchGame();
   }, []);
 
   async function fetchGame() {
@@ -38,18 +38,26 @@ function useGameSocket() {
       socket.connect();
     }
 
-    socket.emit("join-room", { roomCode });
+    socket.emit("join-room", roomCode);
 
-    function handleGameState(updatedGame) {
+    socket.on("game-state", (updatedGame) => {
       setGame(updatedGame);
-    }
+    });
 
-    socket.on("game-state", handleGameState);
+    socket.on("game-over", (data) => {
+      setWinner(data);
+    });
+
+    socket.on("restart-success", () => {
+      setWinner(null);
+    });
 
     return () => {
-      socket.off("game-state", handleGameState);
+      socket.off("game-state");
+      socket.off("game-over");
+      socket.off("restart-success");
     };
-  }, [socket, connected, roomCode]);
+  }, [connected]);
 
   function rollDice() {
     socket.emit("roll-dice", {
@@ -66,11 +74,19 @@ function useGameSocket() {
     });
   }
 
+  function restartGame() {
+    socket.emit("restart-game", {
+      roomCode,
+    });
+  }
+
   return {
     game,
     loading,
     rollDice,
     moveToken,
+    winner,
+    restartGame,
   };
 }
 
