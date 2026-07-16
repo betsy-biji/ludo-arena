@@ -229,9 +229,17 @@ socket.on(
       );
 
       if (!result.success) {
-        console.log(result.message);
-        return;
-      }
+  console.log(result.message);
+
+  // Skip the turn if the move is impossible
+  await nextTurn(game);
+
+  const updatedGame = await Game.findOne({ roomCode });
+
+  io.to(roomCode).emit("game-state", updatedGame);
+
+  return;
+}
 
       game.markModified("tokens");
 
