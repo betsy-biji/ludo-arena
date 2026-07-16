@@ -96,29 +96,52 @@ function sendTokenHome(game, color, tokenNumber) {
 }
 function captureTokens(game, color, position) {
 
-  if (isSafeCell(position)) return;
+  const START_INDEX = {
+    red: 0,
+    green: 13,
+    yellow: 26,
+    blue: 39,
+  };
 
-  Object.entries(game.tokens).forEach(([enemyColor, enemyTokens]) => {
+  // Safe cells
+  if (isSafeCell(position)) {
+    return;
+  }
 
-    if (enemyColor === color) return;
+  // Convert to absolute board index
+  const myAbsolute =
+    (START_INDEX[color] + position) % 52;
 
-    enemyTokens.forEach((enemyToken) => {
+  Object.entries(game.tokens).forEach(
+    ([enemyColor, enemyTokens]) => {
 
-      if (enemyToken.isHome) return;
+      if (enemyColor === color) return;
 
-      if (enemyToken.isFinished) return;
+      enemyTokens.forEach((enemy) => {
 
-      if (enemyToken.position === position) {
+        if (enemy.isHome) return;
 
-        enemyToken.position = -1;
-        enemyToken.isHome = true;
-        enemyToken.isFinished = false;
+        if (enemy.isFinished) return;
 
-      }
+        const enemyAbsolute =
+          (START_INDEX[enemyColor] + enemy.position) % 52;
 
-    });
+        if (enemyAbsolute === myAbsolute) {
 
-  });
+          enemy.position = -1;
+          enemy.isHome = true;
+          enemy.isFinished = false;
+
+          console.log(
+            `${enemyColor} token sent home`
+          );
+
+        }
+
+      });
+
+    }
+  );
 
 }
 function checkWinner(game, color) {
