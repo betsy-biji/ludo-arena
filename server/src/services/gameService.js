@@ -160,8 +160,11 @@ function checkWinner(game, color) {
 }
 const SAFE_CELLS = [0, 8, 13, 21, 26, 34, 39, 47];
 
-function moveToken(game, color, tokenNumber) {
+function isSafeCell(position) {
+  return SAFE_CELLS.includes(position);
+}
 
+function moveToken(game, color, tokenNumber) {
   const token = getToken(game, color, tokenNumber);
 
   if (!token) {
@@ -178,81 +181,81 @@ function moveToken(game, color, tokenNumber) {
     };
   }
 
-  // ---------------- HOME ----------------
-
+  // ---------- HOME ----------
   if (token.isHome) {
-
-    if (game.diceValue !== 6) {
+    if (!canLeaveHome(game)) {
       return {
         success: false,
         message: "Need a 6",
       };
     }
 
-    token.isHome = false;
-    token.position = 0;
-
-    captureTokens(game, color, token.position);
+    leaveHome(game, color, tokenNumber);
 
     return {
       success: true,
-      moved: true,
-      winner: false,
+      leftHome: true,
     };
   }
+const PATH_LENGTH = 51;
 
-  const LAST_POSITION = 51;
+const newPosition = token.position + game.diceValue;
 
-  const newPosition = token.position + game.diceValue;
-
-  // Need exact number only on the last square
-  if (newPosition > LAST_POSITION) {
-
-    return {
-      success: false,
-      message: "Need exact number",
-    };
-
-  }
-
-  token.position = newPosition;
-
-  captureTokens(
-    game,
-    color,
-    token.position
-  );
-
-  if (token.position === LAST_POSITION) {
-
-    token.isFinished = true;
-
-  }
-
-  const won = checkWinner(game, color);
-
+// Need exact number only at the finish
+if (newPosition > PATH_LENGTH) {
   return {
-
-    success: true,
-
-    moved: true,
-
-    finished: token.isFinished,
-
-    winner: won,
-
+    success: false,
+    message: "Need exact number",
   };
+}
 
+token.position = newPosition;
+// ---------- Capture ----------
+captureTokens(
+  game,
+  color,
+  token.position
+);
+
+// ---------- Finish ----------
+// ---------- Finish ----------
+if (token.position >= PATH_LENGTH) {
+  token.position = PATH_LENGTH;
+  token.isFinished = true;
+}
+
+const won = checkWinner(game, color);
+
+return {
+  success: true,
+  moved: true,
+  finished: token.isFinished,
+  winner: won,
+};
 }
 async function nextTurn(game) {
 
-  // Always clear the previous dice
-  game.diceValue = null;
+  /*
+      Standard Ludo Rule
 
-  // Move to next player
+      Roll 6
+      →
+      Extra Turn
+  */
+
+  if (game.diceValue === 6) {
+    game.diceValue = null;
+
+    await game.save();
+
+    return game;
+  }
+
   game.currentTurn =
     (game.currentTurn + 1) %
     game.players.length;
+
+  game.diceValue = null;
 
   await game.save();
 
