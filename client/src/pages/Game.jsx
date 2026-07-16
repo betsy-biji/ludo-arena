@@ -35,30 +35,168 @@ function Game() {
       {/* Winner Popup */}
 
       {winner && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+  <div
+    className="
+      fixed
+      inset-0
+      bg-black/75
+      backdrop-blur-md
+      flex
+      items-center
+      justify-center
+      z-50
+      animate-fadeIn
+    "
+  >
+    <div
+      className="
+        w-[470px]
+        rounded-[32px]
+        overflow-hidden
 
-          <div className="bg-white rounded-3xl shadow-2xl p-10 w-[420px] text-center">
+        bg-gradient-to-br
+        from-slate-900
+        via-slate-800
+        to-slate-950
 
-            <h1 className="text-6xl mb-4">🏆</h1>
+        border
+        border-yellow-400/40
 
-            <h2 className="text-3xl font-bold mb-2">
-              {winner.winner} Wins!
-            </h2>
+        shadow-[0_0_60px_rgba(255,215,0,.18)]
 
-            <p className="text-slate-600 mb-8">
-              Congratulations!
-            </p>
+        p-10
 
-            <button
-            onClick={restartGame}              className="w-full py-3 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition"
-            >
-              Play Again
-            </button>
+        text-center
+      "
+    >
+      {/* Trophy */}
 
-          </div>
+      <div className="text-8xl mb-4 animate-bounce">
+        🏆
+      </div>
 
+      {/* Title */}
+
+      <h1
+        className="
+          text-4xl
+          font-black
+          tracking-wide
+          text-yellow-400
+        "
+      >
+        VICTORY
+      </h1>
+
+      <p
+        className="
+          mt-2
+          text-slate-300
+          text-lg
+        "
+      >
+        Congratulations
+      </p>
+
+      {/* Winner */}
+
+      <div
+        className="
+          mt-8
+
+          rounded-2xl
+
+          bg-slate-800/60
+
+          border
+
+          border-slate-700
+
+          py-6
+        "
+      >
+        <div className="text-6xl mb-3">
+          👑
         </div>
-      )}
+
+        <h2
+          className="
+            text-3xl
+            font-extrabold
+            text-white
+          "
+        >
+          {winner.winner}
+        </h2>
+
+        <p
+          className="
+            mt-2
+            text-yellow-300
+            font-semibold
+          "
+        >
+          is the Winner!
+        </p>
+      </div>
+
+      {/* Buttons */}
+
+      <div className="mt-10 flex gap-4">
+
+        <button
+          onClick={restartGame}
+          className="
+            flex-1
+
+            py-4
+
+            rounded-2xl
+
+            bg-gradient-to-r
+            from-green-500
+            to-emerald-600
+
+            hover:scale-105
+            transition
+
+            text-white
+            font-bold
+            text-lg
+
+            shadow-lg
+          "
+        >
+          🔄 Play Again
+        </button>
+
+        <button
+          onClick={() => window.location.href = "/lobby"}
+          className="
+            flex-1
+
+            py-4
+
+            rounded-2xl
+
+            bg-slate-700
+
+            hover:bg-slate-600
+            transition
+
+            text-white
+            font-bold
+            text-lg
+          "
+        >
+          🚪 Lobby
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+)}
 
       <GameHeader
         roomCode={game.roomCode}

@@ -45,7 +45,6 @@ function GameBoard({
 
       tokens.forEach((token) => {
 
-        // HOME TOKEN
         if (token.isHome) {
           const home =
             HOME_POSITIONS[color][token.tokenNumber];
@@ -71,24 +70,62 @@ function GameBoard({
   }
 
   return (
-    <div
-      className="bg-white rounded-2xl shadow-2xl p-2"
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(15,32px)",
-      }}
-    >
-      {board.flat().map((cell) => (
-        <BoardCell
-          key={cell.id}
-          cell={cell}
-          isMyTurn={true}
-          currentPlayer={currentPlayer}
-          diceValue={game?.diceValue}
-          moveToken={moveToken}
-        />
-      ))}
+
+    <div className="flex justify-center">
+
+      <div
+        className="
+          p-5
+          rounded-3xl
+
+          bg-gradient-to-br
+          from-slate-100
+          via-white
+          to-slate-200
+
+          shadow-[0_20px_60px_rgba(0,0,0,0.35)]
+
+          border-4
+          border-white
+        "
+      >
+
+        <div
+          className="
+            grid
+            gap-[2px]
+
+            rounded-2xl
+            overflow-hidden
+
+            bg-slate-300
+
+            shadow-inner
+          "
+          style={{
+            gridTemplateColumns:
+              "repeat(15,34px)",
+          }}
+        >
+
+          {board.flat().map((cell) => (
+
+            <BoardCell
+              key={cell.id}
+              cell={cell}
+              currentPlayer={currentPlayer}
+              diceValue={game?.diceValue}
+              moveToken={moveToken}
+            />
+
+          ))}
+
+        </div>
+
+      </div>
+
     </div>
+
   );
 }
 

@@ -126,11 +126,12 @@ socket.on("roll-dice", async ({ roomCode, userId }) => {
     if (!game) return;
 
     if (!isPlayerTurn(game, userId)) {
-      console.log("❌ Not your turn");
-      return;
-    }
+  socket.emit("roll-rejected");
+  return;
+}
 
     if (game.diceValue !== null) {
+      socket.emit("roll-rejected");
       return;
     }
 
@@ -210,14 +211,13 @@ socket.on(
       if (!game) return;
 
       if (!isPlayerTurn(game, userId)) {
-        console.log("❌ Not your turn");
-        return;
-      }
-
+  socket.emit("roll-rejected");
+  return;
+}
       if (game.diceValue === null) {
-        console.log("❌ Roll the dice first");
-        return;
-      }
+    return;
+}
+
 
       const currentPlayer = game.players[game.currentTurn];
       const color = currentPlayer.color.toLowerCase();

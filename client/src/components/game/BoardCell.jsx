@@ -1,50 +1,74 @@
 import Token from "./Token";
 import { CELL_TYPES } from "./boardLayout";
 
+function getHomeColor(color) {
+  switch (color) {
+    case "red":
+      return "bg-red-300";
+
+    case "green":
+      return "bg-green-300";
+
+    case "yellow":
+      return "bg-yellow-300";
+
+    case "blue":
+      return "bg-blue-300";
+
+    default:
+      return "bg-slate-100";
+  }
+}
+
 function BoardCell({
   cell,
-  isMyTurn,
   currentPlayer,
   diceValue,
   moveToken,
 }) {
-  let bg = "bg-slate-100";
+  let background = "bg-slate-100";
+  let border = "border-slate-300";
 
   switch (cell.type) {
     case CELL_TYPES.HOME:
-      bg = `bg-${cell.color}-200`;
+background = `${getHomeColor(cell.color)} shadow-inner`;      border = "border-white";
       break;
 
     case CELL_TYPES.PATH:
-      bg = "bg-white";
+      background = "bg-white";
       break;
 
     case CELL_TYPES.SAFE:
-      bg = "bg-green-400";
+      background =
+        "bg-gradient-to-br from-emerald-400 to-green-600";
+      border = "border-green-700";
       break;
 
     case CELL_TYPES.CENTER:
-      bg =
-        "bg-gradient-to-br from-red-400 via-yellow-300 to-green-400";
-      break;
-
+    background =
+      "bg-gradient-to-br from-red-500 via-yellow-400 to-green-500";
+    border = "border-yellow-600";
+    break;
+    
     default:
-      bg = "bg-slate-100";
+      background = "bg-slate-100";
   }
 
   return (
     <div
-      className="
-      w-8
-      h-8
-      border
-      border-slate-400
-      relative
-      flex
-      items-center
-      justify-center
-      overflow-hidden
-      "
+      className={`
+        relative
+        w-[34px]
+        h-[34px]
+        border
+        ${border}
+        overflow-hidden
+        flex
+        items-center
+        justify-center
+        transition-all
+        duration-200
+      `}
     >
       {/* Background */}
 
@@ -52,54 +76,74 @@ function BoardCell({
         className={`
           absolute
           inset-0
-          ${bg}
+          ${background}
         `}
       />
 
-      {/* Coordinates (remove later) */}
+      {/* Safe Cell */}
 
-      <span
-        className="
-        absolute
-        top-0
-        left-0
-        text-[7px]
-        font-bold
-        z-10
-        text-black
-        "
-      >
-        {cell.row},{cell.col}
-      </span>
+      {cell.type === CELL_TYPES.SAFE && (
+        <span
+          className="
+            absolute
+            text-white
+            text-xs
+            z-10
+            select-none
+          "
+        >
+          ★
+        </span>
+      )}
 
+      {/* Center */}
+
+{cell.type === CELL_TYPES.CENTER && (
+  <span
+    className="
+      absolute
+      text-white
+      font-bold
+      text-lg
+      z-10
+      select-none
+      drop-shadow-md
+    "
+  >
+    ★
+  </span>
+)}
       {/* Tokens */}
 
       <div
-        className="
-        relative
-        z-20
-        flex
-        flex-wrap
-        items-center
-        justify-center
-        gap-[1px]
-        w-full
-        h-full
-        p-[2px]
-        "
-      >
-        {cell.tokens.map((token) => (
-  <Token
-    key={`${token.color}-${token.tokenNumber}`}
-    token={token}
-    isMyTurn={
-      currentPlayer &&
-      token.color === currentPlayer.color.toLowerCase()
+  className={`
+    relative
+    z-20
+    flex
+    flex-wrap
+    items-center
+    justify-center
+
+    ${
+      cell.type === CELL_TYPES.HOME
+        ? "w-7 h-7 rounded-full bg-white/90 border-2 border-white shadow-lg"
+        : "w-full h-full p-[2px] gap-[2px]"
     }
-    diceValue={diceValue}
-    onMove={moveToken}
-  />
-))}
+  `}
+>
+        {cell.tokens.map((token) => (
+          <Token
+            key={`${token.color}-${token.tokenNumber}`}
+            token={token}
+            isMyTurn={
+              currentPlayer &&
+              token.color ===
+                currentPlayer.color.toLowerCase()
+            }
+            diceValue={diceValue}
+            onMove={moveToken}
+          />
+        ))}
       </div>
     </div>
   );

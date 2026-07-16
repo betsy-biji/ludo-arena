@@ -1,49 +1,92 @@
+import { useEffect, useRef, useState } from "react";
+import "./DicePanel.css";
+import DiceFace from "./DiceFace";
+
 function DicePanel({
   diceValue,
   onRoll,
 }) {
+  const [rolling, setRolling] = useState(false);
+  const [displayValue, setDisplayValue] = useState(1);
+  const [landed, setLanded] = useState(false);
+
+  // Remember previous dice value
+  const previousDice = useRef(null);
+
+  function handleRoll() {
+    onRoll();
+  }
+
+  useEffect(() => {
+
+    // Ignore null
+    if (diceValue === null) return;
+
+    // Ignore same value again
+    if (previousDice.current === diceValue) return;
+
+    previousDice.current = diceValue;
+
+    setRolling(true);
+
+    const values = [];
+
+    for (let i = 0; i < 8; i++) {
+      values.push(
+        Math.floor(Math.random() * 6) + 1
+      );
+    }
+
+    values.push(diceValue);
+
+    let index = 0;
+
+    const interval = setInterval(() => {
+
+      setDisplayValue(values[index]);
+
+      index++;
+
+      if (index >= values.length) {
+
+        clearInterval(interval);
+
+        setRolling(false);
+
+        setLanded(true);
+
+        setTimeout(() => {
+          setLanded(false);
+        }, 250);
+
+      }
+
+    }, 80);
+
+    return () => clearInterval(interval);
+
+  }, [diceValue]);
+
   return (
-    <div className="text-center">
+    <div className="dice-container">
 
       <div
-        className="
-        h-28
-        w-28
-        bg-white
-        rounded-2xl
-        flex
-        items-center
-        justify-center
-        text-5xl
-        font-black
-        text-black
-        shadow-xl
-        border-4
-        border-slate-300
-        transition-all
-        duration-300
-        "
+        className={`dice-wrapper
+          ${rolling ? "rolling" : ""}
+          ${landed ? "landed" : ""}
+        `}
       >
-        {diceValue ?? "🎲"}
+        <div className="dice-svg">
+          <DiceFace value={displayValue} />
+        </div>
       </div>
 
       <button
-        onClick={onRoll}
-        className="
-        mt-5
-        bg-cyan-500
-        hover:bg-cyan-600
-        transition
-        px-8
-        py-3
-        rounded-xl
-        text-white
-        font-bold
-        text-lg
-        shadow-lg
-        "
+        className="roll-btn"
+        disabled={rolling}
+        onClick={handleRoll}
       >
-        Roll Dice
+        {rolling ? "Rolling..." : "🎲 Roll Dice"}
       </button>
 
     </div>
