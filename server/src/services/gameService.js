@@ -96,9 +96,7 @@ function sendTokenHome(game, color, tokenNumber) {
 }
 function captureTokens(game, color, position) {
 
-  if (isSafeCell(position)) {
-    return;
-  }
+  if (isSafeCell(position)) return;
 
   Object.entries(game.tokens).forEach(([enemyColor, enemyTokens]) => {
 
@@ -110,11 +108,13 @@ function captureTokens(game, color, position) {
 
       if (enemyToken.isFinished) return;
 
-      if (enemyToken.position !== position) return;
+      if (enemyToken.position === position) {
 
-      enemyToken.position = -1;
-      enemyToken.isHome = true;
-      enemyToken.isFinished = false;
+        enemyToken.position = -1;
+        enemyToken.isHome = true;
+        enemyToken.isFinished = false;
+
+      }
 
     });
 
@@ -174,21 +174,19 @@ function moveToken(game, color, tokenNumber) {
       leftHome: true,
     };
   }
+const PATH_LENGTH = 51;
 
-  const PATH_LENGTH = 52;
+const newPosition = token.position + game.diceValue;
 
-  const newPosition =
-    token.position + game.diceValue;
+// Need exact number only at the finish
+if (newPosition > PATH_LENGTH) {
+  return {
+    success: false,
+    message: "Need exact number",
+  };
+}
 
-  // ---------- Cannot cross finish ----------
-  if (newPosition > PATH_LENGTH) {
-    return {
-      success: false,
-      message: "Need exact number",
-    };
-  }
 token.position = newPosition;
-
 // ---------- Capture ----------
 captureTokens(
   game,
@@ -198,7 +196,8 @@ captureTokens(
 
 // ---------- Finish ----------
 // ---------- Finish ----------
-if (token.position === PATH_LENGTH) {
+if (token.position >= PATH_LENGTH) {
+  token.position = PATH_LENGTH;
   token.isFinished = true;
 }
 

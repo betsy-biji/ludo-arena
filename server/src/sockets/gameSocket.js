@@ -229,14 +229,17 @@ socket.on(
       );
 
       if (!result.success) {
+
   console.log(result.message);
 
-  // Skip the turn if the move is impossible
-  await nextTurn(game);
+  const updatedGame = await Game.findOne({
+    roomCode,
+  });
 
-  const updatedGame = await Game.findOne({ roomCode });
-
-  io.to(roomCode).emit("game-state", updatedGame);
+  io.to(roomCode).emit(
+    "game-state",
+    updatedGame
+  );
 
   return;
 }
