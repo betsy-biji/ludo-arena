@@ -201,26 +201,32 @@ if (dice !== 6 && !hasTokenOutside) {
 /* ===========================
         MOVE TOKEN
 =========================== */
-
 socket.on(
   "move-token",
   async ({ roomCode, userId, tokenNumber }) => {
     try {
+
       const game = await Game.findOne({ roomCode });
 
       if (!game) return;
 
       if (!isPlayerTurn(game, userId)) {
-  socket.emit("roll-rejected");
-  return;
-}
+        socket.emit("roll-rejected");
+        return;
+      }
+
       if (game.diceValue === null) {
-    return;
-}
+        return;
+      }
 
+      const currentPlayer =
+        game.players[game.currentTurn];
 
-      const currentPlayer = game.players[game.currentTurn];
-      const color = currentPlayer.color.toLowerCase();
+      const color =
+        currentPlayer.color.toLowerCase();
+
+      const rolledSix =
+        game.diceValue === 6;
 
       const result = moveToken(
         game,
@@ -230,67 +236,77 @@ socket.on(
 
       if (!result.success) {
 
-  console.log(result.message);
+        console.log(result.message);
 
-  const updatedGame = await Game.findOne({
-    roomCode,
-  });
+        io.to(roomCode).emit(
+          "game-state",
+          game
+        );
 
-  io.to(roomCode).emit(
-    "game-state",
-    updatedGame
-  );
-
-  return;
-}
+        return;
+      }
 
       game.markModified("tokens");
 
-await game.save();
+      // Winner
+      if (result.winner) {
 
-if (result.winner) {
+        await game.save();
 
-  io.to(roomCode).emit("game-over", {
-    winner: currentPlayer.username,
-    color: currentPlayer.color,
-  });
+        io.to(roomCode).emit(
+          "game-over",
+          {
+            winner: currentPlayer.username,
+            color: currentPlayer.color,
+          }
+        );
 
-  io.to(roomCode).emit("game-state", game);
+        io.to(roomCode).emit(
+          "game-state",
+          game
+        );
 
-  console.log(
-    `🏆 ${currentPlayer.username} won the game`
-  );
+        console.log(
+          `🏆 ${currentPlayer.username} won`
+        );
 
-  return;
-}
+        return;
+      }
 
-const rolledSix = game.diceValue === 6;
+      // Extra turn on 6
+      if (rolledSix) {
 
-if (!rolledSix) {
-  await nextTurn(game);
-} else {
-  game.diceValue = null;
-  await game.save();
-}
+        game.diceValue = null;
 
-const updatedGame = await Game.findOne({
-  roomCode,
-});
+      } else {
 
-io.to(roomCode).emit(
-  "game-state",
-  updatedGame
-);
+        game.currentTurn =
+          (game.currentTurn + 1) %
+          game.players.length;
 
-console.log(
-  `${currentPlayer.username} moved token ${tokenNumber}`
-);
+        game.diceValue = null;
+
+      }
+
+      await game.save();
+
+      io.to(roomCode).emit(
+        "game-state",
+        game
+      );
+
+      console.log(
+        `${currentPlayer.username} moved token ${tokenNumber}`
+      );
+
     } catch (err) {
+
       console.error("Move Token:", err);
+
     }
   }
 );
-    /* ---------------- DISCONNECT ---------------- */
+/* ---------------- DISCONNECT ---------------- */
 
     socket.on("disconnect", () => {
       console.log("🔴 User Disconnected");
