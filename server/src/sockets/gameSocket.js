@@ -118,20 +118,20 @@ socket.on("restart-game", async ({ roomCode }) => {
     /* ===========================
         ROLL DICE
 =========================== */
-
 socket.on("roll-dice", async ({ roomCode, userId }) => {
   try {
+
     const game = await Game.findOne({ roomCode });
 
     if (!game) return;
 
     if (!isPlayerTurn(game, userId)) {
-  socket.emit("roll-rejected");
-  return;
-}
-
-    if (game.diceValue !== null) {
       socket.emit("roll-rejected");
+      return;
+    }
+
+    // Don't allow rolling twice
+    if (game.diceValue !== null) {
       return;
     }
 
@@ -139,48 +139,6 @@ socket.on("roll-dice", async ({ roomCode, userId }) => {
 
     game.diceValue = dice;
 
-    const currentPlayer = game.players[game.currentTurn];
-
-    const color = currentPlayer.color.toLowerCase();
-
-    const tokens = game.tokens[color];
-
-    const hasTokenOutside = tokens.some(
-      (t) => !t.isHome && !t.isFinished
-    );
-
-    // No token can move
-if (dice !== 6 && !hasTokenOutside) {
-
-  console.log("⏭ No possible move");
-
-  // Show dice first
-  await game.save();
-
-  io.to(roomCode).emit(
-    "game-state",
-    game
-  );
-
-  // Wait 1 second so players can see the dice
-  setTimeout(async () => {
-
-    const latestGame =
-      await Game.findOne({ roomCode });
-
-    if (!latestGame) return;
-
-    await nextTurn(latestGame);
-
-    io.to(roomCode).emit(
-      "game-state",
-      latestGame
-    );
-
-  }, 1000);
-
-  return;
-}
     await game.save();
 
     io.to(roomCode).emit(
@@ -189,11 +147,13 @@ if (dice !== 6 && !hasTokenOutside) {
     );
 
     console.log(
-      `${currentPlayer.username} rolled ${dice}`
+      `${game.players[game.currentTurn].username} rolled ${dice}`
     );
 
   } catch (err) {
-    console.error(err);
+
+    console.error("Roll Dice:", err);
+
   }
 });
     /* ---------------- MOVE TOKEN ---------------- */
@@ -219,14 +179,11 @@ socket.on(
         return;
       }
 
-      const currentPlayer =
-        game.players[game.currentTurn];
+      const currentPlayer = game.players[game.currentTurn];
+      const color = currentPlayer.color.toLowerCase();
 
-      const color =
-        currentPlayer.color.toLowerCase();
-
-      const rolledSix =
-        game.diceValue === 6;
+      // Save before move
+      const rolledSix = game.diceValue === 6;
 
       const result = moveToken(
         game,
@@ -235,7 +192,6 @@ socket.on(
       );
 
       if (!result.success) {
-
         console.log(result.message);
 
         io.to(roomCode).emit(
@@ -253,46 +209,36 @@ socket.on(
 
         await game.save();
 
-        io.to(roomCode).emit(
-          "game-over",
-          {
-            winner: currentPlayer.username,
-            color: currentPlayer.color,
-          }
-        );
+        io.to(roomCode).emit("game-over", {
+          winner: currentPlayer.username,
+          color: currentPlayer.color,
+        });
 
-        io.to(roomCode).emit(
-          "game-state",
-          game
-        );
-
-        console.log(
-          `🏆 ${currentPlayer.username} won`
-        );
+        io.to(roomCode).emit("game-state", game);
 
         return;
       }
 
-      // Extra turn on 6
       if (rolledSix) {
 
+        // Same player gets another roll
         game.diceValue = null;
+
+        await game.save();
 
       } else {
 
-        game.currentTurn =
-          (game.currentTurn + 1) %
-          game.players.length;
-
-        game.diceValue = null;
+        await nextTurn(game);
 
       }
 
-      await game.save();
+      const updatedGame = await Game.findOne({
+        roomCode,
+      });
 
       io.to(roomCode).emit(
         "game-state",
-        game
+        updatedGame
       );
 
       console.log(
